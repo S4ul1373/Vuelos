@@ -1,1 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Información de Vuelos</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
 
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .search-button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            align-self: flex-end;
+            transition: background-color 0.3s;
+        }
+
+        .search-button:hover {
+            background-color: #2980b9;
+        }
+
+        .flights-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .flights-table th, .flights-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .flights-table thead th {
+            background-color: #34495e;
+            color: white;
+        }
+
+        .flights-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .status.on-time { background-color: #2ecc71; }
+        .status.delayed { background-color: #f39c12; }
+        .status.cancelled { background-color: #e74c3c; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Información de Vuelos Comerciales</h1>
+
+        <form class="search-form">
+            <div class="form-group">
+                <label for="origin">Origen</label>
+                <input type="text" id="origin" name="origin" placeholder="Ej: Madrid (MAD)">
+            </div>
+            <div class="form-group">
+                <label for="destination">Destino</label>
+                <input type="text" id="destination" name="destination" placeholder="Ej: Nueva York (JFK)">
+            </div>
+            <div class="form-group">
+                <label for="flight-date">Fecha</label>
+                <input type="date" id="flight-date" name="flight-date">
+            </div>
+            <button type="submit" class="search-button">Buscar Vuelos</button>
+        </form>
+
+        <div class="table-container">
+            <table class="flights-table">
+                <thead>
+                    <tr>
+                        <th>Vuelo</th>
+                        <th>Aerolínea</th>
+                        <th>Origen</th>
+                        <th>Destino</th>
+                        <th>Salida</th>
+                        <th>Llegada</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>IB6251</td>
+                        <td>Iberia</td>
+                        <td>Madrid (MAD)</td>
+                        <td>Nueva York (JFK)</td>
+                        <td>10:40</td>
+                        <td>13:05</td>
+                        <td><span class="status on-time">A Tiempo</span></td>
+                    </tr>
+                    <tr>
+                        <td>UX0091</td>
+                        <td>Air Europa</td>
+                        <td>Madrid (MAD)</td>
+                        <td>Miami (MIA)</td>
+                        <td>15:15</td>
+                        <td>19:00</td>
+                        <td><span class="status delayed">Retrasado</span></td>
+                    </tr>
+                    <tr>
+                        <td>VY1002</td>
+                        <td>Vueling</td>
+                        <td>Barcelona (BCN)</td>
+                        <td>París (ORY)</td>
+                        <td>09:20</td>
+                        <td>11:10</td>
+                        <td><span class="status on-time">A Tiempo</span></td>
+                    </tr>
+                    <tr>
+                        <td>FR5406</td>
+                        <td>Ryanair</td>
+                        <td>Málaga (AGP)</td>
+                        <td>Londres (STN)</td>
+                        <td>18:00</td>
+                        <td>19:55</td>
+                        <td><span class="status cancelled">Cancelado</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>
