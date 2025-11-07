@@ -1,189 +1,274 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Información de Vuelos</title>
+    <title>CDMX Air Traffic Control</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f9;
-            color: #333;
+        :root {
+            --background-color: #1a202c;
+            --sidebar-bg: #2d3748;
+            --table-header-bg: #1a2639;
+            --table-row-odd-bg: #2d3748;
+            --table-row-even-bg: #252e3e;
+            --text-color: #e2e8f0;
+            --border-color: #4a5568;
+            --accent-color: #38b2ac;
+            --accent-color-transparent: rgba(56, 178, 172, 0.2);
+            --hotzone-color: rgba(255, 100, 100, 0.2);
+            --climbing-color: #48bb78; /* green */
+            --descending-color: #f56565; /* red */
+            --level-color: #4299e1; /* blue */
+            --low-altitude-color: #ed8936; /* orange */
+            --status-live-color: #48bb78;
+            --status-loading-color: #ecc94b;
+            --status-error-color: #f56565;
+
+            /* Altitude Colors */
+            --alt-level-1: #ed8936; /* Orange: 0-2000ft */
+            --alt-level-2: #ecc94b; /* Yellow: 2000-6000ft */
+            --alt-level-3: #48bb78; /* Green: 6000-12000ft */
+            --alt-level-4: #4299e1; /* Light Blue: 12000-20000ft */
+            --alt-level-5: #9f7aea; /* Purple: 20000+ ft */
+        }
+        body, html {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 30px;
-        }
-
-        .search-form {
+        #root {
             display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            margin-bottom: 40px;
-            padding: 20px;
-            background-color: #ecf0f1;
-            border-radius: 8px;
+            height: 100vh;
         }
-
-        .form-group {
+        .sidebar {
+            width: 30vw;
+            background-color: var(--sidebar-bg);
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
         }
-
-        .form-group label {
-            margin-bottom: 5px;
+        .sidebar-content {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .status-bar {
+            padding: 12px 16px;
+            background-color: var(--table-header-bg);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9em;
+        }
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
             font-weight: bold;
-            color: #555;
         }
-
-        .form-group input {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
+        .status-indicator::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
         }
-
-        .search-button {
-            padding: 10px 20px;
-            border: none;
-            background-color: #3498db;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            align-self: flex-end;
-            transition: background-color 0.3s;
+        .status-indicator.live::before {
+            background-color: var(--status-live-color);
         }
-
-        .search-button:hover {
-            background-color: #2980b9;
+        .status-indicator.loading::before {
+            background-color: var(--status-loading-color);
+            animation: pulse-yellow 2s infinite;
         }
-
-        .flights-table {
+        .status-indicator.error::before {
+            background-color: var(--status-error-color);
+        }
+        .last-updated {
+            font-size: 0.8em;
+            color: #a0aec0;
+        }
+        .flight-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            font-size: 0.85em;
         }
-
-        .flights-table th, .flights-table td {
-            padding: 15px;
+        .flight-table th {
+            padding: 10px 8px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
         }
-
-        .flights-table thead th {
-            background-color: #34495e;
-            color: white;
+        .flight-table th:hover {
+            background-color: #38455a;
         }
-
-        .flights-table tbody tr:hover {
-            background-color: #f5f5f5;
+        .flight-table td {
+            white-space: nowrap;
+            padding: 8px;
         }
-
-        .status {
-            padding: 5px 10px;
-            border-radius: 12px;
-            color: white;
+        .flight-table tr.selected-row {
+            background-color: var(--accent-color) !important;
+            color: #1a202c;
             font-weight: bold;
-            text-align: center;
+        }
+        .flight-table tr:hover {
+            background-color: #38455a;
+        }
+        .unit-secondary {
+            color: #a0aec0;
+            font-size: 0.9em;
+            margin-left: 4px;
         }
 
-        .status.on-time { background-color: #2ecc71; }
-        .status.delayed { background-color: #f39c12; }
-        .status.cancelled { background-color: #e74c3c; }
+        .leaflet-tooltip {
+            background-color: var(--background-color) !important;
+            color: var(--text-color) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 4px;
+            box-shadow: none !important;
+            padding: 8px !important;
+            font-size: 0.9em;
+        }
+        .leaflet-tooltip-top:before {
+            border-top-color: var(--border-color) !important;
+        }
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .tooltip-row span:first-child {
+            font-weight: bold;
+            margin-right: 8px;
+        }
 
+        .selection-marker {
+            border: 2px solid var(--level-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--level-color);
+            animation: pulse-blue 1.5s infinite;
+        }
+        
+        .heatmap-toggle-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 401; /* Above map tiles but below modals */
+            background-color: var(--sidebar-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 34px;
+            height: 34px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .heatmap-toggle-button:hover {
+            background-color: #38455a;
+        }
+        .heatmap-toggle-button.active {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+        }
+
+        .stats-toggle {
+            background-color: transparent;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            padding: 16px;
+            font-size: 1.1em;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stats-toggle .arrow {
+            transition: transform 0.2s ease-in-out;
+        }
+        .stats-toggle.open .arrow {
+            transform: rotate(90deg);
+        }
+
+        .stats-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            background-color: #252e3e;
+        }
+        .stats-panel.open {
+            max-height: 500px; /* Adjust as needed */
+        }
+        .stats-list {
+            list-style: none;
+            padding: 0 16px 16px 16px;
+            margin: 0;
+        }
+        .stats-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #38455a;
+        }
+        .stats-list li:last-child {
+            border-bottom: none;
+        }
+        .stats-list .count {
+            font-weight: bold;
+            background-color: var(--accent-color);
+            color: var(--background-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .low-altitude-warning {
+            color: var(--low-altitude-color);
+            font-weight: bold;
+            margin-right: 4px;
+        }
+
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 0 0 rgba(236, 201, 75, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(236, 201, 75, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(236, 201, 75, 0); }
+        }
+        @keyframes pulse-blue {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(66, 153, 225, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(66, 153, 225, 0); }
+        }
     </style>
-    <link rel="stylesheet" href="decoracion1.css">
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body>
-
-    <div class="container">
-        <h1>Información de Vuelos Comerciales</h1>
-
-        <form class="search-form">
-            <div class="form-group">
-                <label for="origin">Origen</label>
-                <input type="text" id="origin" name="origin" placeholder="Ej: Madrid (MAD)">
-            </div>
-            <div class="form-group">
-                <label for="destination">Destino</label>
-                <input type="text" id="destination" name="destination" placeholder="Ej: Nueva York (JFK)">
-            </div>
-            <div class="form-group">
-                <label for="flight-date">Fecha</label>
-                <input type="date" id="flight-date" name="flight-date">
-            </div>
-            <button type="submit" class="search-button">Buscar Vuelos</button>
-        </form>
-
-        <div class="table-container">
-            <table class="flights-table">
-                <thead>
-                    <tr>
-                        <th>Vuelo</th>
-                        <th>Aerolínea</th>
-                        <th>Origen</th>
-                        <th>Destino</th>
-                        <th>Salida</th>
-                        <th>Llegada</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>IB6251</td>
-                        <td>Iberia</td>
-                        <td>Madrid (MAD)</td>
-                        <td>Nueva York (JFK)</td>
-                        <td>10:40</td>
-                        <td>13:05</td>
-                        <td><span class="status on-time">A Tiempo</span></td>
-                    </tr>
-                    <tr>
-                        <td>UX0091</td>
-                        <td>Air Europa</td>
-                        <td>Madrid (MAD)</td>
-                        <td>Miami (MIA)</td>
-                        <td>15:15</td>
-                        <td>19:00</td>
-                        <td><span class="status delayed">Retrasado</span></td>
-                    </tr>
-                    <tr>
-                        <td>VY1002</td>
-                        <td>Vueling</td>
-                        <td>Barcelona (BCN)</td>
-                        <td>París (ORY)</td>
-                        <td>09:20</td>
-                        <td>11:10</td>
-                        <td><span class="status on-time">A Tiempo</span></td>
-                    </tr>
-                    <tr>
-                        <td>FR5406</td>
-                        <td>Ryanair</td>
-                        <td>Málaga (AGP)</td>
-                        <td>Londres (STN)</td>
-                        <td>18:00</td>
-                        <td>19:55</td>
-                        <td><span class="status cancelled">Cancelado</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
+<div id="root"></div>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
